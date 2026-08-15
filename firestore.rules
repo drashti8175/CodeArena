@@ -1,0 +1,46 @@
+rules_version = '2';
+
+// =====================================================================
+// CodeArena Firestore Security Rules
+// =====================================================================
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+    
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    // ----- users/{uid} -----
+    // Each user can completely read & update their own profile.
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+    }
+
+    // ----- loginEvents/{eventId} -----
+    // Users can read their own login history but never create/update/delete
+    // it from the client. The Cloud Function writes these.
+    match /loginEvents/{eventId} {
+      allow read: if isSignedIn() && resource.data.uid == request.auth.uid;
+      allow write: if false; // Only the Cloud Function can write
+    }
+
+    // ----- Public read-only collections (e.g. leaderboard, problems) -----
+    match /problems/{problemId} {
+      allow read: if true;
+      allow write: if false;
+    }
+    match /leaderboard/{entry} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // ----- Default: deny everything else -----
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
