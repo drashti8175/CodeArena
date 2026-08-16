@@ -9,8 +9,11 @@ import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 interface GameState {
   user: User;
   problems: Problem[];
+  editorFontSize: number;
   submitSolution: (problemId: string, language: Language, code: string) => Promise<Submission>;
   resetProblem: (problemId: string) => void;
+  updateUserLocally: (patch: Partial<User>) => void;
+  setEditorFontSize: (size: number) => void;
 }
 
 const GameContext = createContext<GameState | null>(null);
@@ -20,17 +23,40 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const [user, setUser] = useState<User>(MOCK_USER);
   const [problems, setProblems] = useState<Problem[]>(MOCK_PROBLEMS);
+  const [editorFontSize, setEditorFontSizeState] = useState(14);
 
+  // Sync arenaUser into game user
   useEffect(() => {
     if (arenaUser) {
       setUser(prev => ({
         ...prev,
-        ...arenaUser
+        ...arenaUser,
       } as User));
     } else {
       setUser(MOCK_USER);
     }
   }, [arenaUser]);
+
+  // Load font size from localStorage on mount
+  useEffect(() => {
+    const stored = localStorage.getItem("editor_font_size");
+    if (stored) setEditorFontSizeState(Number(stored));
+  }, []);
+
+  // Apply font size as a CSS variable on <html> so the editor picks it up
+  useEffect(() => {
+    document.documentElement.style.setProperty("--editor-font-size", `${editorFontSize}px`);
+  }, [editorFontSize]);
+
+  const setEditorFontSize = useCallback((size: number) => {
+    setEditorFontSizeState(size);
+    localStorage.setItem("editor_font_size", String(size));
+  }, []);
+
+  // Allow settings page to patch user state in real time (e.g., avatar, streakTheme)
+  const updateUserLocally = useCallback((patch: Partial<User>) => {
+    setUser(prev => ({ ...prev, ...patch }));
+  }, []);
 
   const submitSolution = useCallback(async (problemId: string, language: Language, code: string): Promise<Submission> => {
     await new Promise(r => setTimeout(r, 1800));
@@ -69,13 +95,13 @@ export function GameProvider({ children }: { children: ReactNode }) {
       }));
       setProblems(prev => prev.map(p => p.id === problemId ? { ...p, solved: true } : p));
 
-      // Persist to Firebase if actual user is logged in
+      // Persist to Firebase
       if (arenaUser?.uid) {
         updateDoc(doc(db, "users", arenaUser.uid), {
           xp: newXP,
           coins: newCoins,
           rank: newRank,
-          solvedProblems: arrayUnion(problemId)
+          solvedProblems: arrayUnion(problemId),
         }).catch(err => console.error("Firestore update failed:", err));
       }
     } else {
@@ -94,7 +120,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
   }, []);
 
   return (
-    <GameContext.Provider value={{ user, problems, submitSolution, resetProblem }}>
+    <GameContext.Provider value={{ user, problems, editorFontSize, submitSolution, resetProblem, updateUserLocally, setEditorFontSize }}>
       {children}
     </GameContext.Provider>
   );

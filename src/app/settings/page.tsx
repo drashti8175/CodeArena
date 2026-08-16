@@ -47,7 +47,7 @@ function StatusMsg({ ok, msg }: { ok: boolean; msg: string }) {
 
 export default function SettingsPage() {
   const { arenaUser, firebaseUser, refreshProfile, signOut } = useAuth();
-  const { user } = useGame();
+  const { user, editorFontSize, updateUserLocally, setEditorFontSize } = useGame();
 
   const [section, setSection] = useState<Section>("account");
 
@@ -83,19 +83,36 @@ export default function SettingsPage() {
   }
 
   // ── Appearance ────────────────────────────────────────────────
-  const [streakTheme, setStreakTheme] = useState<string>(arenaUser?.streakTheme ?? "fire");
-  const [fontSize, setFontSize] = useState(14);
+  const [streakTheme, setStreakThemeLocal] = useState<string>("fire");
+  const [fontSize, setFontSizeLocal] = useState(editorFontSize);
   const [appearSaving, setAppearSaving] = useState(false);
   const [appearMsg, setAppearMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
+  // Sync from arenaUser once loaded
+  useEffect(() => {
+    if (arenaUser?.streakTheme) setStreakThemeLocal(arenaUser.streakTheme);
+  }, [arenaUser?.streakTheme]);
+  useEffect(() => {
+    setFontSizeLocal(editorFontSize);
+  }, [editorFontSize]);
+
+  // Live preview helpers — update globally, no save needed yet
+  function pickTheme(key: string) {
+    setStreakThemeLocal(key);
+    updateUserLocally({ streakTheme: key as "fire" | "ice" | "galaxy" });
+  }
+  function pickFontSize(size: number) {
+    setFontSizeLocal(size);
+    setEditorFontSize(size); // applies CSS var + localStorage immediately
+  }
+
   async function saveAppearance() {
-    if (!arenaUser?.uid) return;
     setAppearSaving(true); setAppearMsg(null);
     try {
-      await updateDoc(doc(db, "users", arenaUser.uid), { streakTheme });
-      // Save font size to localStorage (it's a client-only preference)
-      localStorage.setItem("editor_font_size", String(fontSize));
-      await refreshProfile();
+      if (arenaUser?.uid) {
+        await updateDoc(doc(db, "users", arenaUser.uid), { streakTheme: streakTheme });
+        await refreshProfile();
+      }
       setAppearMsg({ ok: true, text: "Appearance saved!" });
     } catch {
       setAppearMsg({ ok: false, text: "Save failed. Please try again." });
@@ -288,9 +305,9 @@ export default function SettingsPage() {
                   <div className="grid grid-cols-3 gap-3">
                     {(Object.entries(STREAK_THEMES) as [string, { icon: string; color: string; glow: string }][]).map(([key, t]) => (
                       <motion.button key={key} whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-                        onClick={() => setStreakTheme(key)}
-                        className={clsx("p-4 rounded-xl border transition-all", streakTheme === key
-                          ? "border-yellow-500/60 bg-yellow-500/10 ring-1 ring-yellow-500/30"
+                        onClick={() => pickTheme(key)}
+                        className={clsx("p-4 rounded-xl border-2 transition-all", streakTheme === key
+                          ? "border-yellow-500 bg-yellow-500/10 ring-2 ring-yellow-500/30 shadow-lg shadow-yellow-500/10"
                           : "border-[#2a2a3a] hover:border-[#3a3a4a]")}>
                         <div className={`h-8 rounded-lg bg-gradient-to-r ${t.color} mb-2 flex items-center justify-center text-lg`}>{t.icon}</div>
                         <p className="text-xs font-semibold text-white capitalize">{key}</p>
@@ -306,7 +323,7 @@ export default function SettingsPage() {
                   <div className="flex gap-2 flex-wrap">
                     {FONT_SIZES.map(size => (
                       <motion.button key={size} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-                        onClick={() => setFontSize(size)}
+                        onClick={() => pickFontSize(size)}
                         className={clsx("px-4 py-2 rounded-lg border text-sm font-medium transition-colors", fontSize === size
                           ? "border-yellow-500/50 bg-yellow-500/10 text-yellow-400"
                           : "border-[#2a2a3a] text-gray-400 hover:border-[#3a3a4a] hover:text-white")}>
