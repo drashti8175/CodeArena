@@ -54,6 +54,13 @@ export function getXPToNextRank(xp: number): { current: number; next: number; ra
   return { current, next, rank };
 }
 
+export const AVATARS_LIST = [
+  "🐉", "🦉", "🧙", "🦅", "⚔️", "🛡️", "⚡", "🥷", "🎭", "🦊",
+  "🐺", "🦁", "🐯", "🦄", "🤖", "👾", "🔥", "🌊", "🌌", "💎",
+  "🚀", "🎯", "🧠", "💻", "🎮", "🏆", "⭐", "🌙", "☀️", "🌈",
+  "🐲", "🦋", "🐬", "🦈", "🦚", "🦜", "🐙", "🦕", "🧊", "🌋",
+];
+
 export const MOCK_SUBMISSIONS: Submission[] = [
   { id: "s1", problemId: "1", problemTitle: "Two Sum", status: "Accepted", language: "javascript", runtime: "72ms", memory: "42.1MB", timestamp: "2024-12-10T10:30:00Z", xpEarned: 20 },
   { id: "s2", problemId: "2", problemTitle: "Valid Parentheses", status: "Accepted", language: "python", runtime: "45ms", memory: "16.2MB", timestamp: "2024-12-09T14:20:00Z", xpEarned: 20 },
