@@ -77,25 +77,19 @@ export default function SignupPage() {
     return Object.keys(e).length === 0;
   }
 
-  // ── STEP 1 — next button (email flow) ────────────────────────────────────
-  function handleNext(e: React.FormEvent) {
-    e.preventDefault();
-    if (validateStep1Email()) setStep(2);
-  }
-
-  // ── STEP 2 submit — email/password ────────────────────────────────────────
+  // ── STEP 1 submit — email/password ────────────────────────────────────────
   async function handleEmailSignup(e: React.FormEvent) {
     e.preventDefault();
+    if (!validateStep1Email()) return;
     if (!agreed) { setErrors({ agree: "You must agree to the terms." }); return; }
-    const uErr = validateUsername();
-    if (uErr) { setErrors({ username: uErr }); return; }
+
     setSubmitting(true);
     setErrors({});
     try {
-      await signUpWithEmail(email.trim(), password, username.trim(), avatar);
+      await signUpWithEmail(email.trim(), password, username.trim());
       setSuccess("Account created! Check your email for a verification link. Redirecting…");
       setTimeout(() => router.push("/dashboard"), 1800);
-    } catch (err) {
+    } catch (err: any) {
       setErrors({ submit: getAuthErrorMessage(err as AuthError) });
     } finally {
       setSubmitting(false);
@@ -185,7 +179,8 @@ export default function SignupPage() {
   // ── derived ───────────────────────────────────────────────────────────────
   const passStrength = PASSWORD_RULES.filter(r => r.test(password)).length;
   const strengthColor = ["bg-[#2a2a3a]", "bg-red-500", "bg-yellow-500", "bg-green-500"][passStrength];
-  const onFinalSubmit = isGoogleFlow ? handleGoogleSignup : handleEmailSignup;
+  // the email form sub is handleEmailSignup natively in step 1 now
+  const onFinalSubmit = handleGoogleSignup;
 
   if (loading) {
     return (
@@ -323,7 +318,7 @@ export default function SignupPage() {
                 </div>
 
                 {/* Email/password form */}
-                <form onSubmit={handleNext} className="space-y-4">
+                <form onSubmit={handleEmailSignup} className="space-y-4">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-1.5">Username</label>
                     <div className="relative">
@@ -384,11 +379,30 @@ export default function SignupPage() {
                         <AlertCircle size={16} className="shrink-0 mt-0.5" />{errors.submit}
                       </motion.div>
                     )}
+                    {success && (
+                      <motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }}
+                        className="flex items-center gap-2.5 text-green-400 text-sm bg-green-900/20 border border-green-500/25 rounded-xl px-4 py-3">
+                        <CheckCircle2 size={16} className="shrink-0" />{success}
+                      </motion.div>
+                    )}
                   </AnimatePresence>
 
+                  {/* Terms */}
+                  <div className="flex items-start gap-3 mt-4 mb-2">
+                    <button type="button" onClick={() => { setAgreed(v => !v); setErrors({}); }}
+                      className={`w-5 h-5 rounded border-2 flex items-center justify-center shrink-0 mt-0.5 transition-all ${agreed ? "bg-yellow-500 border-yellow-500" : "border-[#3a3a4a] hover:border-gray-500"}`}>
+                      {agreed && <CheckCircle2 size={12} className="text-black" />}
+                    </button>
+                    <p className="text-sm text-gray-400 leading-relaxed">
+                      I agree to the <span className="text-yellow-400 cursor-pointer hover:underline">Terms of Service</span> and <span className="text-yellow-400 cursor-pointer hover:underline">Privacy Policy</span>
+                    </p>
+                  </div>
+                  {errors.agree && <p className="text-red-400 text-xs flex items-center gap-1 mb-4"><AlertCircle size={11} />{errors.agree}</p>}
+
                   <motion.button whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }} type="submit"
-                    className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-black rounded-xl text-sm flex items-center justify-center gap-2">
-                    Continue <ArrowRight size={15} />
+                    disabled={submitting || success.length > 0}
+                    className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-black rounded-xl text-sm flex items-center justify-center gap-2 disabled:opacity-60">
+                    {submitting ? "Signing up..." : <>Sign Up <ArrowRight size={15} /></>}
                   </motion.button>
                 </form>
               </motion.div>

@@ -13,12 +13,18 @@ export default function EmailVerificationGate() {
   const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [avatar, setAvatar] = useState("🐉");
+  const AVATARS = ["🐉", "🦉", "🧙", "🦅", "⚔️", "🛡️", "⚡", "🥷", "🎭", "🦊", "🐺", "🦁", "🐯", "🦄", "🤖", "👾"];
 
-  // Skip the gate for Google sign-in (Google already verifies emails)
+  // Skip the gate if Google user or if email is verified AND profile exists
   const isGoogleUser = arenaUser?.provider === "google";
-  const isVerified = firebaseUser?.emailVerified || isGoogleUser;
 
-  if (isVerified) return null;
+  // If they are verified but don't have a profile yet, they stay in this component
+  // to pick their avatar.
+  const isFullyVerified = isGoogleUser || (firebaseUser?.emailVerified && arenaUser);
+
+  if (isFullyVerified) return null;
 
   async function handleResend() {
     if (!firebaseUser?.email) return;
@@ -40,8 +46,22 @@ export default function EmailVerificationGate() {
     setError("");
     try {
       await refreshCurrentUser();
-      // Force a reload by navigating away and back
-      window.location.reload();
+
+      const { auth } = await import("@/lib/firebase/config");
+      const user = auth.currentUser;
+
+      if (user?.emailVerified) {
+        // If verified, check if they need an avatar (arenaUser is missing)
+        if (!arenaUser) {
+          setShowAvatarPicker(true);
+          setChecking(false);
+        } else {
+          window.location.reload();
+        }
+      } else {
+        setError("Your email is not verified yet. Please check your inbox and click the verification link.");
+        setChecking(false);
+      }
     } catch {
       setError("Could not refresh status. Please try again.");
       setChecking(false);
@@ -53,8 +73,62 @@ export default function EmailVerificationGate() {
     router.replace("/login");
   }
 
+  async function handleFinalize() {
+    setChecking(true);
+    setError("");
+    try {
+      const { finalizeEmailSignup } = await import("@/lib/firebase/auth");
+      await finalizeEmailSignup(avatar);
+      // Wait a moment for auth context to pick up the changes
+      setTimeout(() => {
+        window.location.reload();
+      }, 1000);
+    } catch (err: any) {
+      setError(err.message || "Failed to create profile.");
+      setChecking(false);
+    }
+  }
+
+  if (firebaseUser?.emailVerified && !arenaUser && showAvatarPicker) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md bg-[#0d0d14] border border-yellow-500/30 rounded-2xl p-8 shadow-2xl"
+        >
+          <h1 className="text-2xl font-black text-white text-center mb-2">Welcome to CodeArena!</h1>
+          <p className="text-gray-400 text-sm text-center mb-6">
+            Your email is verified. Pick your avatar to continue.
+          </p>
+
+          <div className="grid grid-cols-4 sm:grid-cols-8 gap-2 mb-6">
+            {AVATARS.map(a => (
+              <motion.button key={a} type="button" whileHover={{ scale: 1.15 }} whileTap={{ scale: 0.95 }}
+                onClick={() => setAvatar(a)}
+                className={`text-2xl p-2 rounded-xl border-2 transition-all ${avatar === a ? "border-yellow-500 bg-yellow-500/15 shadow-lg shadow-yellow-500/20" : "border-[#2a2a3a] hover:border-[#3a3a4a] bg-[#16161f]"}`}>
+                {a}
+              </motion.button>
+            ))}
+          </div>
+
+          {error && (
+            <div className="flex items-start gap-2 bg-red-900/20 border border-red-500/30 rounded-xl p-3 mb-4 text-sm text-red-300">
+              <AlertCircle size={16} className="shrink-0 mt-0.5" />{error}
+            </div>
+          )}
+
+          <button onClick={handleFinalize} disabled={checking}
+            className="w-full py-3 bg-gradient-to-r from-yellow-500 to-orange-500 text-black font-black rounded-xl text-sm flex items-center justify-center gap-2">
+            {checking ? <><Loader2 size={15} className="animate-spin" /> Setting up...</> : "Join the Arena 🚀"}
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-[calc(100vh-3.5rem)] flex items-center justify-center p-6">
+    <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex items-center justify-center p-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

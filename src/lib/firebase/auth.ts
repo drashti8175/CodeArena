@@ -104,16 +104,22 @@ export async function getUserProfile(uid: string): Promise<ArenaUser | null> {
 export async function signUpWithEmail(
   email: string,
   password: string,
-  username: string,
-  avatar: string
-): Promise<ArenaUser> {
+  username: string
+): Promise<void> {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(cred.user, { displayName: username });
   await sendEmailVerification(cred.user);
+}
+
+// Finalize Signup (creates profile with chosen avatar)
+export async function finalizeEmailSignup(avatar: string): Promise<ArenaUser> {
+  const user = auth.currentUser;
+  if (!user) throw new Error("No user is signed in.");
+  if (!user.emailVerified) throw new Error("Email must be verified to create a profile.");
 
   const profile: Omit<ArenaUser, "uid"> = {
-    username,
-    email,
+    username: user.displayName || user.email!.split("@")[0],
+    email: user.email!,
     avatar,
     rank: "Bronze",
     level: 1,
@@ -127,9 +133,9 @@ export async function signUpWithEmail(
     provider: "email",
   };
 
-  await createUserProfile(cred.user.uid, profile);
-  await recordLogin(cred.user.uid, email, "email");
-  return { uid: cred.user.uid, ...profile };
+  await createUserProfile(user.uid, profile);
+  await recordLogin(user.uid, user.email!, "email");
+  return { uid: user.uid, ...profile };
 }
 
 // Sign In with Email + Password
@@ -147,32 +153,15 @@ export async function signInWithEmail(email: string, password: string): Promise<
 
   let profile = await getUserProfile(cred.user.uid);
 
-  // Auto-repair missing profiles (e.g. if signup crashed halfway before)
-  if (!profile) {
-    const profileData: Omit<ArenaUser, "uid"> = {
-      username: cred.user.displayName || email.split("@")[0],
-      email: cred.user.email!,
-      avatar: "🐉",
-      rank: "Bronze",
-      level: 1,
-      xp: 0,
-      coins: 100,
-      streak: 0,
-      streakTheme: "fire",
-      skills: {},
-      solvedProblems: [],
-      joinedAt: new Date().toISOString().split("T")[0],
-      provider: "email",
-    };
-    await createUserProfile(cred.user.uid, profileData);
-    profile = { uid: cred.user.uid, ...profileData };
+  // If the profile does not exist yet (e.g. user hasn't selected their emoji),
+  // they will be prompted to create one in the app.
+  if (profile) {
+    // Record login ONLY after we are sure the user document exists, 
+    // otherwise setDoc(..., merge:true) triggers a partial create which fails security rules.
+    await recordLogin(cred.user.uid, email, "email");
   }
 
-  // Record login ONLY after we are sure the user document exists, 
-  // otherwise setDoc(..., merge:true) triggers a partial create which fails security rules.
-  await recordLogin(cred.user.uid, email, "email");
-
-  return profile;
+  return profile as ArenaUser; // could be null if not created yet
 }
 
 // Sign In / Sign Up with Google
