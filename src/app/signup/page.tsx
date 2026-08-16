@@ -87,7 +87,7 @@ export default function SignupPage() {
     setErrors({});
     try {
       await signUpWithEmail(email.trim(), password, username.trim());
-      setSuccess("Account created! Check your email for a verification link. Redirecting…");
+      setSuccess("Account created! Check your email (and spam folder) for the link. Redirecting…");
       setTimeout(() => router.push("/dashboard"), 1800);
     } catch (err: any) {
       setErrors({ submit: getAuthErrorMessage(err as AuthError) });

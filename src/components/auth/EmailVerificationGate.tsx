@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Mail, AlertCircle, Loader2, CheckCircle2, LogOut } from "lucide-react";
@@ -8,7 +8,7 @@ import { resendVerificationEmail, refreshCurrentUser, signOut } from "@/lib/fire
 
 export default function EmailVerificationGate() {
   const router = useRouter();
-  const { firebaseUser, arenaUser } = useAuth();
+  const { firebaseUser, arenaUser, loading } = useAuth();
   const [sending, setSending] = useState(false);
   const [checking, setChecking] = useState(false);
   const [message, setMessage] = useState("");
@@ -24,6 +24,39 @@ export default function EmailVerificationGate() {
   // to pick their avatar.
   const isFullyVerified = isGoogleUser || (firebaseUser?.emailVerified && arenaUser);
 
+  // Poll Firebase every 3 seconds to auto-detect when verification completes in another tab
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (firebaseUser && !firebaseUser.emailVerified) {
+      interval = setInterval(async () => {
+        try {
+          await firebaseUser.reload();
+          // After reload, fetch currentUser from auth (force the singleton refresh)
+          const { auth } = await import("@/lib/firebase/config");
+          if (auth.currentUser?.emailVerified) {
+            if (!arenaUser) {
+              setShowAvatarPicker(true);
+            } else {
+              window.location.reload();
+            }
+          }
+        } catch (err) {
+          // ignore network errors on poll
+        }
+      }, 3000);
+    }
+    return () => clearInterval(interval);
+  }, [firebaseUser, arenaUser]);
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex items-center justify-center p-6">
+        <Loader2 size={32} className="animate-spin text-yellow-500" />
+      </div>
+    );
+  }
+
+  if (!firebaseUser) return null;
   if (isFullyVerified) return null;
 
   async function handleResend() {
@@ -89,7 +122,7 @@ export default function EmailVerificationGate() {
     }
   }
 
-  if (firebaseUser?.emailVerified && !arenaUser && showAvatarPicker) {
+  if (showAvatarPicker && !arenaUser) {
     return (
       <div className="fixed inset-0 z-50 bg-[#0a0a0f] flex items-center justify-center p-6">
         <motion.div
@@ -144,7 +177,8 @@ export default function EmailVerificationGate() {
         <p className="text-gray-400 text-sm text-center mb-6">
           We sent a verification link to{" "}
           <span className="text-yellow-400 font-mono">{firebaseUser?.email}</span>.
-          Click the link to activate your account.
+          <br />
+          Click the link to activate your account. (Check your spam folder too!)
         </p>
 
         {message && (

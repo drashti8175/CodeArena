@@ -1,5 +1,6 @@
 "use client";
-import { createContext, useContext, useState, useCallback, ReactNode } from "react";
+import { createContext, useContext, useState, useCallback, ReactNode, useEffect } from "react";
+import { useAuth } from "@/store/AuthContext";
 import { Language, Problem, Submission, SubmissionStatus, User } from "@/types";
 import { MOCK_USER, MOCK_PROBLEMS, XP_REWARDS, getRankFromXP } from "@/lib/data";
 
@@ -13,8 +14,21 @@ interface GameState {
 const GameContext = createContext<GameState | null>(null);
 
 export function GameProvider({ children }: { children: ReactNode }) {
+  const { arenaUser } = useAuth();
+
   const [user, setUser] = useState<User>(MOCK_USER);
   const [problems, setProblems] = useState<Problem[]>(MOCK_PROBLEMS);
+
+  useEffect(() => {
+    if (arenaUser) {
+      setUser(prev => ({
+        ...prev,
+        ...arenaUser
+      } as User));
+    } else {
+      setUser(MOCK_USER);
+    }
+  }, [arenaUser]);
 
   const submitSolution = useCallback(async (problemId: string, language: Language, code: string): Promise<Submission> => {
     await new Promise(r => setTimeout(r, 1800));
