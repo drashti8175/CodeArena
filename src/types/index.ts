@@ -23,6 +23,14 @@ export interface Submission {
   xpEarned: number;
 }
 
+export interface Badge {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  earnedAt: string;
+}
+
 export interface User {
   id: string;
   username: string;
@@ -39,6 +47,7 @@ export interface User {
   joinedAt: string;
   submissions?: Submission[];
   acceptanceRate?: number;
+  badges?: Badge[];
 }
 
 export interface Problem {

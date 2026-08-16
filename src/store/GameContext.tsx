@@ -3,6 +3,8 @@ import { createContext, useContext, useState, useCallback, ReactNode, useEffect 
 import { useAuth } from "@/store/AuthContext";
 import { Language, Problem, Submission, SubmissionStatus, User } from "@/types";
 import { MOCK_USER, MOCK_PROBLEMS, XP_REWARDS, getRankFromXP } from "@/lib/data";
+import { db } from "@/lib/firebase/config";
+import { doc, updateDoc, arrayUnion } from "firebase/firestore";
 
 interface GameState {
   user: User;
@@ -52,25 +54,36 @@ export function GameProvider({ children }: { children: ReactNode }) {
     };
 
     if (isCorrect && !alreadySolved) {
-      setUser(prev => {
-        const newXP = prev.xp + xpEarned;
-        return {
-          ...prev,
-          xp: newXP,
-          coins: prev.coins + problem.coinReward,
-          rank: getRankFromXP(newXP),
-          solvedProblems: [...prev.solvedProblems, problemId],
-          streak: prev.streak + (prev.streak === 0 ? 1 : 0),
-          submissions: [submission, ...(prev.submissions ?? [])],
-        };
-      });
+      const newXP = user.xp + xpEarned;
+      const newCoins = user.coins + problem.coinReward;
+      const newRank = getRankFromXP(newXP);
+
+      setUser(prev => ({
+        ...prev,
+        xp: newXP,
+        coins: newCoins,
+        rank: newRank,
+        solvedProblems: [...prev.solvedProblems, problemId],
+        streak: prev.streak + (prev.streak === 0 ? 1 : 0),
+        submissions: [submission, ...(prev.submissions ?? [])],
+      }));
       setProblems(prev => prev.map(p => p.id === problemId ? { ...p, solved: true } : p));
+
+      // Persist to Firebase if actual user is logged in
+      if (arenaUser?.uid) {
+        updateDoc(doc(db, "users", arenaUser.uid), {
+          xp: newXP,
+          coins: newCoins,
+          rank: newRank,
+          solvedProblems: arrayUnion(problemId)
+        }).catch(err => console.error("Firestore update failed:", err));
+      }
     } else {
       setUser(prev => ({ ...prev, submissions: [submission, ...(prev.submissions ?? [])] }));
     }
 
     return submission;
-  }, [problems, user.solvedProblems]);
+  }, [problems, user, arenaUser]);
 
   const resetProblem = useCallback((problemId: string) => {
     setProblems(prev => prev.map(p => p.id === problemId ? { ...p, solved: false } : p));

@@ -279,6 +279,96 @@ export const MOCK_PROBLEMS: Problem[] = [
       python: `class LRUCache:\n    def __init__(self, capacity: int):\n        \n    def get(self, key: int) -> int:\n        \n    def put(self, key: int, value: int) -> None:\n        `,
     },
   },
+  {
+    id: "13", title: "Reverse Linked List", difficulty: "Easy", tags: ["Trees"],
+    xpReward: 20, coinReward: 5, solved: false, acceptanceRate: 73.1, totalSubmissions: 3900000,
+    description: "Given the head of a singly linked list, reverse the list, and return the reversed list.",
+    constraints: ["The number of nodes in the list is the range [0, 5000].", "-5000 <= Node.val <= 5000"],
+    examples: [
+      { input: "head = [1,2,3,4,5]", output: "[5,4,3,2,1]" },
+    ],
+    hints: ["Use iterative two pointers or recursive approach."],
+    companies: ["Apple", "Amazon", "Facebook", "Microsoft"],
+    starterCode: {
+      javascript: `var reverseList = function(head) {\n  \n};`,
+      python: `class Solution:\n    def reverseList(self, head: Optional[ListNode]) -> Optional[ListNode]:\n        `,
+    },
+  },
+  {
+    id: "14", title: "Merge Intervals", difficulty: "Medium", tags: ["Arrays", "Greedy"],
+    xpReward: 60, coinReward: 15, solved: false, acceptanceRate: 46.2, totalSubmissions: 4100000,
+    description: "Given an array of intervals where intervals[i] = [starti, endi], merge all overlapping intervals, and return an array of the non-overlapping intervals that cover all the intervals in the input.",
+    constraints: ["1 <= intervals.length <= 10^4", "intervals[i].length == 2", "0 <= starti <= endi <= 10^4"],
+    examples: [
+      { input: "intervals = [[1,3],[2,6],[8,10],[15,18]]", output: "[[1,6],[8,10],[15,18]]" },
+    ],
+    hints: ["Sort the intervals by their start times."],
+    companies: ["Google", "Bloomberg", "Amazon"],
+    starterCode: {
+      javascript: `var merge = function(intervals) {\n  \n};`,
+      python: `class Solution:\n    def merge(self, intervals: List[List[int]]) -> List[List[int]]:\n        `,
+    },
+  },
+  {
+    id: "15", title: "Contains Duplicate", difficulty: "Easy", tags: ["Arrays"],
+    xpReward: 20, coinReward: 5, solved: false, acceptanceRate: 61.2, totalSubmissions: 4200000,
+    description: "Given an integer array nums, return true if any value appears at least twice in the array, and return false if every element is distinct.",
+    constraints: ["1 <= nums.length <= 10^5", "-10^9 <= nums[i] <= 10^9"],
+    examples: [
+      { input: "nums = [1,2,3,1]", output: "true" },
+    ],
+    hints: ["Use a Set to keep track of seen elements."],
+    companies: ["Amazon", "Google", "Apple"],
+    starterCode: {
+      javascript: `var containsDuplicate = function(nums) {\n  \n};`,
+      python: `class Solution:\n    def containsDuplicate(self, nums: List[int]) -> bool:\n        `,
+    },
+  },
+  {
+    id: "16", title: "Trapping Rain Water", difficulty: "Hard", tags: ["Arrays", "DP", "Greedy"],
+    xpReward: 120, coinReward: 30, solved: false, acceptanceRate: 59.8, totalSubmissions: 3100000,
+    description: "Given n non-negative integers representing an elevation map where the width of each bar is 1, compute how much water it can trap after raining.",
+    constraints: ["n == height.length", "1 <= n <= 2 * 10^4", "0 <= height[i] <= 10^5"],
+    examples: [
+      { input: "height = [0,1,0,2,1,0,1,3,2,1,2,1]", output: "6", explanation: "6 units of rain water are being trapped." },
+    ],
+    hints: ["Two pointers approach from left and right reduces space complexity to O(1)."],
+    companies: ["Amazon", "Goldman Sachs", "Google"],
+    starterCode: {
+      javascript: `var trap = function(height) {\n  \n};`,
+      python: `class Solution:\n    def trap(self, height: List[int]) -> int:\n        `,
+    },
+  },
+  {
+    id: "17", title: "Group Anagrams", difficulty: "Medium", tags: ["Strings", "Arrays"],
+    xpReward: 60, coinReward: 15, solved: false, acceptanceRate: 67.2, totalSubmissions: 3300000,
+    description: "Given an array of strings strs, group the anagrams together. You can return the answer in any order.",
+    constraints: ["1 <= strs.length <= 10^4", "0 <= strs[i].length <= 100", "strs[i] consists of lowercase English letters."],
+    examples: [
+      { input: 'strs = ["eat","tea","tan","ate","nat","bat"]', output: '[["bat"],["nat","tan"],["ate","eat","tea"]]' },
+    ],
+    hints: ["Sort each string to use as a key in a hash map."],
+    companies: ["Amazon", "Microsoft", "Uber"],
+    starterCode: {
+      javascript: `var groupAnagrams = function(strs) {\n  \n};`,
+      python: `class Solution:\n    def groupAnagrams(self, strs: List[str]) -> List[List[str]]:\n        `,
+    },
+  },
+  {
+    id: "18", title: "Valid Palindrome", difficulty: "Easy", tags: ["Strings"],
+    xpReward: 20, coinReward: 5, solved: false, acceptanceRate: 45.7, totalSubmissions: 4800000,
+    description: "A phrase is a palindrome if, after converting all uppercase letters into lowercase letters and removing all non-alphanumeric characters, it reads the same forward and backward. Alphanumeric characters include letters and numbers.\n\nGiven a string s, return true if it is a palindrome, or false otherwise.",
+    constraints: ["1 <= s.length <= 2 * 10^5", "s consists only of printable ASCII characters."],
+    examples: [
+      { input: 's = "A man, a plan, a canal: Panama"', output: "true", explanation: '"amanaplanacanalpanama" is a palindrome.' },
+    ],
+    hints: ["Use two pointers moving inwards from both ends."],
+    companies: ["Meta", "Amazon", "Spotify", "Microsoft"],
+    starterCode: {
+      javascript: `var isPalindrome = function(s) {\n  \n};`,
+      python: `class Solution:\n    def isPalindrome(self, s: str) -> bool:\n        `,
+    },
+  }
 ];
 
 export const MOCK_QUESTS: Quest[] = [

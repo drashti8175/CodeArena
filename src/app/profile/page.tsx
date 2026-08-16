@@ -1,4 +1,5 @@
 "use client";
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { useGame } from "@/store/GameContext";
 import { RANK_COLORS, RANK_BG, generateHeatmap } from "@/lib/data";
@@ -7,7 +8,7 @@ import SkillTree from "@/components/dashboard/SkillTree";
 import StreakBadge from "@/components/ui/StreakBadge";
 import DifficultyBadge from "@/components/ui/DifficultyBadge";
 import LoginHistory from "@/components/profile/LoginHistory";
-import { Share2, CheckCircle2, XCircle, AlertCircle, Zap, Calendar } from "lucide-react";
+import { Share2, CheckCircle2, XCircle, AlertCircle, Zap, Calendar, Check, Copy } from "lucide-react";
 import Link from "next/link";
 import clsx from "clsx";
 
@@ -46,6 +47,7 @@ const statusColor = (s: string) => s === "Accepted" ? "text-green-400" : s === "
 
 export default function ProfilePage() {
   const { user, problems } = useGame();
+  const [copied, setCopied] = useState(false);
   const solved = problems.filter(p => user.solvedProblems.includes(p.id));
   const easy = solved.filter(p => p.difficulty === "Easy").length;
   const medium = solved.filter(p => p.difficulty === "Medium").length;
@@ -56,6 +58,25 @@ export default function ProfilePage() {
   const allSubs = user.submissions ?? [];
   const accepted = allSubs.filter(s => s.status === "Accepted").length;
   const accRate = allSubs.length ? Math.round((accepted / allSubs.length) * 100) : 0;
+
+  const handleShare = async () => {
+    const text = `Check out my CodeArena profile! I'm a ${user.rank} rank with ${solved.length} problems solved. 🚀`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'CodeArena Profile',
+          text,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error("Error sharing", err);
+      }
+    } else {
+      await navigator.clipboard.writeText(`${text}\n${window.location.href}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-6 space-y-5">
@@ -94,8 +115,9 @@ export default function ProfilePage() {
             </div>
           </div>
           <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+            onClick={handleShare}
             className="flex items-center gap-2 px-4 py-2 bg-white/8 border border-white/15 rounded-lg text-white text-sm font-medium hover:bg-white/15 transition-colors shrink-0">
-            <Share2 size={14} /> Share
+            {copied ? <Check size={14} className="text-green-400" /> : <Share2 size={14} />} {copied ? "Copied!" : "Share"}
           </motion.button>
         </div>
       </motion.div>
